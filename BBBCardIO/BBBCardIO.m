@@ -1,111 +1,62 @@
-//
-//  BBBCardIO.m
-//  BBBCardIO
-//
-//  Created by Ollie Relph on 24/09/2015.
-//  Copyright © 2015 Oliver Relph. All rights reserved.
-//
+// //
+// //  BBBCardIO.m
+// //  BBBCardIO
+// //
+// //  Created by Ollie Relph on 24/09/2015.
+// //  Copyright © 2015 Oliver Relph. All rights reserved.
+// //
 
 #import "BBBCardIO.h"
 #import "RCTEventDispatcher.h"
 #import "CardIO.h"
-#import "CardIOUtilities.h"
 
-#define DETECTION_MODE  @{ @"IMAGE_AND_NUMBER" : @(CardIODetectionModeCardImageAndNumber), @"IMAGE" : @(CardIODetectionModeCardImageOnly), @"AUTOMATIC" : @(CardIODetectionModeAutomatic) }
+@interface BBBCardIO () <CardIOPaymentViewControllerDelegate, RCTBridgeModule>
 
-@implementation RCTConvert (CardIODetectionMode)
-RCT_ENUM_CONVERTER(CardIODetectionMode, (DETECTION_MODE), CardIODetectionModeCardImageAndNumber, integerValue);
+@property (copy) RCTResponseSenderBlock flowCompletedCallback;
+
 @end
 
-@implementation BBBCardIO {
-    CardIOView *cardIOView;
-}
+@implementation BBBCardIO
 
+RCT_EXPORT_MODULE();
 
-@synthesize bridge = _bridge;
+RCT_EXPORT_METHOD(getCreditCardInfo:(RCTResponseSenderBlock)flowCompletedCallback)
 
-RCT_EXPORT_MODULE(BBBCardIO);
+{
 
-- (dispatch_queue_t)methodQueue {
-    return dispatch_get_main_queue();
-}
+  CardIOPaymentViewController *vc = [[CardIOPaymentViewController alloc] initWithPaymentDelegate:self];
 
-RCT_EXPORT_METHOD(preload) {
-    [CardIOUtilities preload];
-}
+  self.flowCompletedCallback = flowCompletedCallback;
 
-RCT_EXPORT_VIEW_PROPERTY(pitchEnabled, BOOL);
-
-RCT_EXPORT_VIEW_PROPERTY(languageOrLocale, NSString);
-
-RCT_EXPORT_VIEW_PROPERTY(guideColor, UIColor);
-
-RCT_EXPORT_VIEW_PROPERTY(useCardIOLogo, BOOL);
-
-RCT_EXPORT_VIEW_PROPERTY(hideCardIOLogo, BOOL);
-
-RCT_EXPORT_VIEW_PROPERTY(allowFreelyRotatingCardGuide, BOOL);
-
-RCT_EXPORT_VIEW_PROPERTY(scanInstructions, NSString);
-
-RCT_EXPORT_VIEW_PROPERTY(scanExpiry, BOOL);
-
-RCT_EXPORT_VIEW_PROPERTY(detectionMode, CardIODetectionMode);
-
-RCT_EXPORT_VIEW_PROPERTY(scannedImageDuration, CGFloat);
-
-- (UIView *)view {
-    cardIOView = [[CardIOView alloc] init];
-    cardIOView.delegate = self;
-    return cardIOView;
-}
-
-- (NSDictionary *)constantsToExport {
-    NSString *libraryVersion = [CardIOUtilities libraryVersion];
-    BOOL canReadCardWithCamera = [CardIOUtilities canReadCardWithCamera];
-    return @{
-        @"DETECTION_MODE": DETECTION_MODE,
-        @"LIBRARY_VERSION" : libraryVersion,
-        @"CAN_READ_CARD_WITH_CAMERA": @(canReadCardWithCamera)
-    };
-}
-
-#pragma mark - CardIOViewDelegate Methods
-
-- (void)cardIOView:(__unused CardIOView *)cardIOView didScanCard:(CardIOCreditCardInfo *)info {
-    if (info) {
-
-        NSString *cardType = [CardIOCreditCardInfo displayStringForCardType: info.cardType
-                                                      usingLanguageOrLocale: cardIOView.languageOrLocale];
-
-        NSMutableDictionary *cardInfo = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                         info.cardNumber, @"cardNumber",
-                                         info.redactedCardNumber, @"redactedCardNumber",
-                                         cardType, @"cardType",
-                                         nil];
-
-        if(info.expiryMonth > 0 && info.expiryYear > 0) {
-            [cardInfo setObject:[NSNumber numberWithUnsignedInteger:info.expiryMonth] forKey:@"expiryMonth"];
-            [cardInfo setObject:[NSNumber numberWithUnsignedInteger:info.expiryYear] forKey:@"expiryYear"];
-        }
-        if(info.cvv.length > 0) {
-            [cardInfo setObject:info.cvv forKey:@"cvv"];
-        }
-        if(info.postalCode.length > 0) {
-            [cardInfo setObject:info.postalCode forKey:@"zip"];
-        }
-
-        [self.bridge.eventDispatcher sendAppEventWithName:@"cardIOSuccess"
-                                                     body:cardInfo];
-    } else {
-
-        [self.bridge.eventDispatcher sendAppEventWithName:@"cardIOError"
-                                                     body:@{
-                                                            @"message": @"User cancelled payment info"
-                                                            }];
+  UIViewController *visibleVC = [[[UIApplication sharedApplication] keyWindow] rootViewController];
+  do {
+    if ([visibleVC isKindOfClass:[UINavigationController class]]) {
+      visibleVC = [(UINavigationController *)visibleVC visibleViewController];
+    } else if (visibleVC.presentedViewController) {
+      visibleVC = visibleVC.presentedViewController;
     }
+  } while (visibleVC.presentedViewController);
 
-    [cardIOView removeFromSuperview];
+  [visibleVC presentViewController:vc animated:YES completion:^{
+    // self.flowCompletedCallback(@[[NSNull null]]);
+  }];
+}
+
+- (void)userDidProvideCreditCardInfo:(CardIOCreditCardInfo *)info inPaymentViewController:(CardIOPaymentViewController *)paymentViewController {
+  [paymentViewController.presentingViewController dismissViewControllerAnimated:YES completion:^{
+    if (self.flowCompletedCallback) {
+
+      self.flowCompletedCallback(@[[NSString stringWithFormat:@"%@,%02lu/%lu,%@.", info.cardNumber, (unsigned long)info.expiryMonth, (unsigned long)info.expiryYear, info.cvv]]);
+    }
+  }];
+}
+
+- (void)userDidCancelPaymentViewController:(CardIOPaymentViewController *)paymentViewController {
+    NSLog(@"User cancelled scan");
+    [paymentViewController.presentingViewController dismissViewControllerAnimated:YES completion:^{
+      self.flowCompletedCallback(@[[NSNull null]]);
+    }];
 }
 
 @end
+
