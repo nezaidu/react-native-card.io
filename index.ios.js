@@ -7,11 +7,12 @@ const functions = {
   getCreditCardInfo() {
     return new Promise(function(resolve, reject) {
       BBBCardIO.getCreditCardInfo((data) => {
-      	if (data) {
-      		resolve(data);
-      	} else {
-      		reject();
-      	}
+        if (data) {
+          let [cardNumber, expiryMonth, expiryYear, cvv] = data.split(',');
+          resolve(cardNumber, expiryMonth, expiryYear, cvv);
+        } else {
+          reject();
+        }
       });
     });
   },

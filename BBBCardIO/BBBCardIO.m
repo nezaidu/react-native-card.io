@@ -23,7 +23,6 @@ RCT_EXPORT_MODULE();
 RCT_EXPORT_METHOD(getCreditCardInfo:(RCTResponseSenderBlock)flowCompletedCallback)
 
 {
-
   CardIOPaymentViewController *vc = [[CardIOPaymentViewController alloc] initWithPaymentDelegate:self];
 
   self.flowCompletedCallback = flowCompletedCallback;
@@ -46,7 +45,7 @@ RCT_EXPORT_METHOD(getCreditCardInfo:(RCTResponseSenderBlock)flowCompletedCallbac
   [paymentViewController.presentingViewController dismissViewControllerAnimated:YES completion:^{
     if (self.flowCompletedCallback) {
 
-      self.flowCompletedCallback(@[[NSString stringWithFormat:@"%@,%02lu/%lu,%@.", info.cardNumber, (unsigned long)info.expiryMonth, (unsigned long)info.expiryYear, info.cvv]]);
+      self.flowCompletedCallback(@[[NSString stringWithFormat:@"%@,%02lu,%lu,%@", info.cardNumber, (unsigned long)info.expiryMonth, (unsigned long)info.expiryYear, info.cvv]]);
     }
   }];
 }
