@@ -9,7 +9,7 @@ const functions = {
       BBBCardIO.getCreditCardInfo((data) => {
         if (data) {
           let [cardNumber, expiryMonth, expiryYear, cvv] = data.split(',');
-          resolve(cardNumber, expiryMonth, expiryYear, cvv);
+          resolve({cardNumber, expiryMonth, expiryYear, cvv})
         } else {
           reject();
         }
