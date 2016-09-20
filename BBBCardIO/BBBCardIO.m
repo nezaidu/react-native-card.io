@@ -50,6 +50,11 @@ RCT_EXPORT_METHOD(getCreditCardInfo:(RCTResponseSenderBlock)flowCompletedCallbac
   }];
 }
 
+- (dispatch_queue_t)methodQueue
+{
+  return dispatch_get_main_queue();
+}
+
 - (void)userDidCancelPaymentViewController:(CardIOPaymentViewController *)paymentViewController {
     NSLog(@"User cancelled scan");
     [paymentViewController.presentingViewController dismissViewControllerAnimated:YES completion:^{
