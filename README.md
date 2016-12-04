@@ -25,6 +25,7 @@ A walkthrough with screenshots of each of the steps can be found [on my blog](ht
 1. Add the .xcodeproj from `node_modules/react-native-card.io/` to your .xcodeproj
 1. Add libBBBCardIO.a to "Build Phases -> Link Binary With Libraries"
 1. Add "-lc++" to "Other Linker Flags"
+USE COCOAPODS
 
 
 ### Usage
