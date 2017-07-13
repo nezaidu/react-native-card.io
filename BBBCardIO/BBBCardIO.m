@@ -7,7 +7,7 @@
 // //
 
 #import "BBBCardIO.h"
-#import "RCTEventDispatcher.h"
+#import <React/RCTEventDispatcher.h>
 #import "CardIO.h"
 
 @interface BBBCardIO () <CardIOPaymentViewControllerDelegate, RCTBridgeModule>
